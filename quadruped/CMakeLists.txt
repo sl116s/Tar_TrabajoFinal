@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "-O3 -DEIGEN_NO_DEBUG -fopenmp ${CMAKE_CXX_FLAGS}")
 message("CMAKE_CXX_FLAGS = " ${CMAKE_CXX_FLAGS})
 ADD_COMPILE_OPTIONS(-D_cplusplus)
 ADD_COMPILE_OPTIONS(-D_useros)
-# ADD_COMPILE_OPTIONS(-DQPOASES_AVOID_LA_NAMING_CONFLICTS)
+ADD_COMPILE_OPTIONS(-DQPOASES_AVOID_LA_NAMING_CONFLICTS)
 
 option(USE_GO1                            "WHICH ROBOT"                     OFF)
 option(USE_BLAS                            "USE MKL BLAS"                   ON)
@@ -38,6 +38,12 @@ if (${USE_BLAS})
    set(BLA_VENDOR Intel10_64lp)
    add_definitions(-DEIGEN_USE_MKL_ALL)
 endif()
+
+# force the OpenBLAS provider and enable OpenMP
+set(BLA_VENDOR OpenBLAS)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+
+
 
 find_package(BLAS REQUIRED)
 message(${BLAS_LIBRARIES})
@@ -161,6 +167,6 @@ else() #A1 & AligenGo
     target_link_libraries(quadruped PUBLIC robot_interface)
 endif()
 
-# if (${USE_BLAS})
-#    target_link_libraries(quadruped PUBLIC ${BLAS_LIBRARIES})
-# endif()
+if (${USE_BLAS})
+   target_link_libraries(quadruped PUBLIC ${BLAS_LIBRARIES})
+endif()
