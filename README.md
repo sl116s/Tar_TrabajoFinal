@@ -28,7 +28,7 @@ Durante el proceso de integración y compilación del proyecto descargado de htt
    - En `examples/CMakeLists.txt` y en el `CMakeLists.txt` de **quadruped**, se añadió:
      ```cmake
      find_package(BLAS REQUIRED)
-     target_link_libraries(<tu_target> PUBLIC ${catkin_LIBRARIES} ${BLAS_LIBRARIES})
+     target_link_libraries(<tu_target> PUBLIC ${catkin_LIBRARIES} ${BLAS_LIBRARIES}) ...
      ```
    - Se forzó el proveedor de BLAS con `set(BLA_VENDOR OpenBLAS)` (o `Intel10_64lp` para MKL) y se incluyó también `find_package(LAPACK REQUIRED)` cuando fue necesario.
 
@@ -50,7 +50,7 @@ En resumen, hemos recorrido la instalación y configuración de MKL/OpenBLAS, aj
 
 ---
 
-7. **Github del Turtlebot mapping**
+**Github del Turtlebot mapping**
 https://github.com/sl116s/TurtleBot_Mapping_Tar
 
 # 1. Overview
