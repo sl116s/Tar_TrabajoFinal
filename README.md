@@ -1,3 +1,58 @@
+# Resumen de problemas y soluciones
+
+Durante el proceso de integración y compilación del proyecto descargado de https://github.com/TopHillRobotics/quadruped-robot, nos enfrentamos a varios retos y los superamos de la siguiente manera:
+
+1. **Errores de Eigen/MKL (`mkl.h` no encontrado)**  
+   - Al compilar con `catkin_make`, Eigen intentaba usar MKL y no encontraba `mkl.h`.  
+   - Intentamos instalar el paquete `intel-oneapi-mkl-devel` añadiendo llaves GPG y repositorio Intel, pero no existía el nombre exacto.  
+   - Verificamos que teníamos instalados `intel-oneapi-mkl-devel-2025.1` y las bibliotecas `libblas-dev`, `liblapack-dev`, `libopenblas-dev`.
+
+2. **Configuración de CMakeLists.txt para BLAS/LAPACK**  
+   - Activamos `option(USE_BLAS ON)` y definimos `BLA_VENDOR Intel10_64lp` para usar MKL.  
+   - Para evitar conflictos, forzamos después `BLA_VENDOR OpenBLAS` y añadimos `-fopenmp`.  
+   - Incluimos `find_package(BLAS REQUIRED)` y `find_package(LAPACK REQUIRED)`, y enlazamos `${BLAS_LIBRARIES}` y `${LAPACK_LIBRARIES}` en `target_link_libraries`.  
+   - Con ello se resolvieron los “undefined reference to `sgemm`, `LAPACKE_sgetrf`, …`”.
+
+3. **Orden y enlaces de dependencias externas**  
+   - `tinynurbs` se añadía _después_ del objetivo, provocando errores de “target `tinynurbs::tinynurbs` not found”.  
+   - Reordenamos `add_subdirectory(extern/tinynurbs)` _antes_ de `add_library(quadruped)` y ajustamos `target_link_libraries`.
+
+4. **Limpieza y compatibilidad de _workspaces_**  
+   - Alternamos entre `catkin build` y `catkin_make`, limpiando completamente `build/`, `devel/` e `install/` para evitar residuos de configuraciones anteriores.  
+   - Actualizamos `CMAKE_PREFIX_PATH` con `source /opt/intel/oneapi/setvars.sh` y reseteamos con `rosclean purge`.
+   
+5. **Conversión a Python 3**  
+   - Se utilizó la herramienta `2to3` para migrar todos los scripts de control de Python 2 a Python 3, evitando errores de sintaxis y compatibilidad al ejecutar los nodos de ejemplo.
+
+6. **Errores “undefined reference to `sgemm`” (y otras funciones BLAS/LAPACK)**  
+   - En `examples/CMakeLists.txt` y en el `CMakeLists.txt` de **quadruped**, se añadió:
+     ```cmake
+     find_package(BLAS REQUIRED)
+     target_link_libraries(<tu_target> PUBLIC ${catkin_LIBRARIES} ${BLAS_LIBRARIES})
+     ```
+   - Se forzó el proveedor de BLAS con `set(BLA_VENDOR OpenBLAS)` (o `Intel10_64lp` para MKL) y se incluyó también `find_package(LAPACK REQUIRED)` cuando fue necesario.
+
+
+7. **Problemas en archivos `launch` de Gazebo**  
+   - Aparecía `resource not found: realsense_ros_gazebo` y errores de `<param>` inválido en `model_spawn.launch`.  
+   - Unimos dos lanzadores en una sola línea y corregimos rutas relativas, asegurando que `gazebo_startup.launch` y `model_spawn.launch` carguen los controladores adecuados.
+
+8. **Errores en tiempo de ejecución (runtime)**  
+   - Al ejecutar `example_keyboard` surgió `error while loading shared libraries: libmkl_intel_lp64.so.2`.  
+   - Solucionado con `source /opt/intel/oneapi/setvars.sh` o exportando `LD_LIBRARY_PATH` a los binarios de MKL.
+
+7. **Simulación funcional pero robot inmóvil**  
+   - `example_a1_sim` completaba el stand-up, pero abortaba con `[ERROR] … The dog is going down, main function exit.` y excepción `std::domain_error: datax no data`.  
+   - Verificamos que no existía el servicio `/controller_manager/list_controllers` ni los tópicos `/joint_states` o `/cmd_vel`.  
+   - Constatamos que faltaba _spawnear_ los controladores de ROS Control (`rosrun controller_manager spawner …`) o activar el nodo `controller_manager` desde el launch.
+
+En resumen, hemos recorrido la instalación y configuración de MKL/OpenBLAS, ajustes en CMake, orden de dependencias, limpieza de workspace, corrección de launch files, gestión de bibliotecas en tiempo de ejecución y diagnóstico de controladores ROS. El proyecto ya compila y lanza la simulación, solo resta cargar correctamente los controladores para que el robot responda a comandos.
+
+---
+
+7. **Github del Turtlebot mapping**
+https://github.com/sl116s/TurtleBot_Mapping_Tar
+
 # 1. Overview
 
 This project branch integrates some advanced algrithms such as MPC and WBC to control quadruped robots.
